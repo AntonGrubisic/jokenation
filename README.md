@@ -10,4 +10,27 @@ Access control based on token scopes (jokes.read, quotes.read)
 
 Full deployment in Kubernetes, including Ingress routing
 
-It satisfies all requirements for both the Pass and Distinction (VG) levels of the assignment, including advanced deployment and architectural recommendations.
+
+
+➤ 1. Build the Services
+You can use the provided rebuild.ps1 (or rebuild.sh on Unix-based systems) to build Docker images for all services:
+
+bash
+./rebuild.ps1
+
+bash
+docker-compose build
+
+➤ 2. Start All Services
+Run the system locally with:
+
+docker-compose up
+All services will run in a shared Docker network (microservices-net) and expose their respective ports:
+
+Auth Service: localhost:9000
+
+API Gateway: localhost:8081
+
+Joke Service: internal only (port 8083 inside container)
+
+Quote Service: internal only (port 8082 inside container)
