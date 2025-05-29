@@ -27,6 +27,7 @@ Run the system locally with:
 docker-compose up
 
 
+
 All services will run in a shared Docker network (microservices-net) and expose their respective ports:
 
 Auth Service: localhost:9000
