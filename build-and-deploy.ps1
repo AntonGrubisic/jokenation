@@ -37,4 +37,4 @@ Write-Host "`nDone '$namespace'."
 
 Write-Host "`nTips:"
 Write-Host "- Check status: kubectl get pods -n $namespace"
-Write-Host "- TEst API: curl http://jokenation.local/jokes/random"
+Write-Host "- Test API: curl http://jokenation.local/jokes/random"
