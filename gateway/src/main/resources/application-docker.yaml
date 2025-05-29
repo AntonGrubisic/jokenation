@@ -14,7 +14,7 @@ spring:
 
 
           - id: jokes-route
-            uri: http://jokeservice:8083/
+            uri: http://jokeservice:8080/
             predicates:
               - Path=/jokes/**
 

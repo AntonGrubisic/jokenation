@@ -42,7 +42,7 @@ services:
       context: ./jokeservice
     image: jokeservice:0.0.1-SNAPSHOT
     ports:
-      - "8083:8083"
+      - "8083:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     networks:
