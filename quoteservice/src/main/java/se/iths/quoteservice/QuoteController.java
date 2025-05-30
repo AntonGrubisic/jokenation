@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Random;
 
 @RestController
+@PreAuthorize("hasAnyAuthority('SCOPE_quotes.read')")
 @RequestMapping("/quotes")
 public class QuoteController {
 
@@ -17,6 +18,7 @@ public class QuoteController {
     );
 
     @GetMapping
+    @PreAuthorize("hasAuthority('SCOPE_quotes.read')")
     public List<String> getQuotes() {
         return quotes;
     }

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Random;
 
 @RestController
+@PreAuthorize("hasAnyAuthority('SCOPE_jokes.read')")
 @RequestMapping("/jokes")
 public class JokeController {
 
@@ -17,6 +18,7 @@ public class JokeController {
     );
 
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('SCOPE_jokes.read')")
     public List<String> getJokes() {
         return jokes;
     }

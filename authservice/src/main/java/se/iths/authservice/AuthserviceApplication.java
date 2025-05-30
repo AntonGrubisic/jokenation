@@ -36,15 +36,13 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.List;
 import java.util.UUID;
-
 
 @SpringBootApplication
 public class AuthserviceApplication {
@@ -69,45 +67,28 @@ public class AuthserviceApplication {
     }
 
     @Bean
-    CorsConfigurationSource corsConfigurationSource() {
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        CorsConfiguration config = new CorsConfiguration();
-        config.addAllowedHeader("*");
-        config.addAllowedMethod("*");
-        config.setAllowCredentials(true);
-        source.registerCorsConfiguration("/**", config);
-        return source;
-    }
-
-    @Bean
     @Order(2)
-    SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
-        http.authorizeHttpRequests(authorize ->
-                        authorize.anyRequest().authenticated())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+    SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        http.authorizeHttpRequests(authz -> authz.anyRequest().authenticated())
                 .formLogin(Customizer.withDefaults());
         return http.build();
     }
 
-    @Bean
     @Order(1)
-    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
-        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
-                OAuth2AuthorizationServerConfigurer.authorizationServer();
+    @Bean
+    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
+        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
 
         http
                 .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
-                .with(authorizationServerConfigurer, authorizationServer -> authorizationServer
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
+                .exceptionHandling(exceptions ->
+                        exceptions.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
+                )
+                .with(authorizationServerConfigurer, configurer -> configurer
                         .tokenRevocationEndpoint(Customizer.withDefaults())
                         .tokenIntrospectionEndpoint(Customizer.withDefaults())
                         .oidc(Customizer.withDefaults())
-                )
-                .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().authenticated()
-                )
-                .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
                 );
 
         return http.build();
@@ -115,26 +96,17 @@ public class AuthserviceApplication {
 
     @Bean
     public RegisteredClientRepository registeredClientRepository(PasswordEncoder encoder) {
-
-        RegisteredClient client = RegisteredClient.withId("client-id")
+        RegisteredClient client = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId("client-id")
                 .clientSecret(encoder.encode("secret"))
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                .redirectUri("http://127.0.0.1:8080/login/oauth2/code/oidc-client")
-                .scope(OidcScopes.OPENID)
-                .scope("read_resource")
                 .scope("jokes.read")
                 .scope("quotes.read")
-                .clientSettings(ClientSettings.builder().
-                        build())
                 .build();
 
         return new InMemoryRegisteredClientRepository(client);
     }
-
 
     @Bean
     public JWKSource<SecurityContext> jwkSource() {
@@ -150,15 +122,13 @@ public class AuthserviceApplication {
     }
 
     private static KeyPair generateRsaKey() {
-        KeyPair keyPair;
         try {
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-            keyPairGenerator.initialize(2048);
-            keyPair = keyPairGenerator.generateKeyPair();
+            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+            generator.initialize(2048);
+            return generator.generateKeyPair();
         } catch (Exception ex) {
             throw new IllegalStateException(ex);
         }
-        return keyPair;
     }
 
     @Bean
@@ -168,19 +138,20 @@ public class AuthserviceApplication {
 
     @Bean
     @Profile("docker")
-    public AuthorizationServerSettings dockerAuthorizationServerSettings() {
+    public AuthorizationServerSettings dockerSettings() {
         return AuthorizationServerSettings.builder()
-                .issuer("http://auth:9000")
+                .issuer("http://authservice:9000")
                 .build();
     }
 
     @Bean
     @Profile("!docker")
-    public AuthorizationServerSettings authorizationServerSettings() {
+    public AuthorizationServerSettings localSettings() {
         return AuthorizationServerSettings.builder()
                 .issuer("http://localhost:9000")
                 .build();
     }
+
     @Bean
     public AuthenticationManager authenticationManager(PasswordEncoder passwordEncoder, UserDetailsService userDetailsService) {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -193,11 +164,11 @@ public class AuthserviceApplication {
     public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer() {
         return context -> {
             if (context.getPrincipal() != null) {
-                var authorities = context.getPrincipal().getAuthorities().stream()
+                List<String> roles = context.getPrincipal().getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)
-                        .filter(role -> role.startsWith("ROLE_"))
+                        .filter(auth -> auth.startsWith("ROLE_"))
                         .toList();
-                context.getClaims().claim("roles", authorities);
+                context.getClaims().claim("roles", roles);
             }
         };
     }

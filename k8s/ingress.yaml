@@ -3,8 +3,7 @@ kind: Ingress
 metadata:
   name: jokenation-ingress
   namespace: jokenation
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /oauth2/token
+
 
 spec:
   ingressClassName: nginx
@@ -13,7 +12,7 @@ spec:
       http:
         paths:
           # Auth service
-          - path: /auth/token
+          - path: /auth(/|$)(.*)
             pathType: Prefix
             backend:
               service:
@@ -21,9 +20,8 @@ spec:
                 port:
                   number: 9000
 
-
           # Gateway service
-          - path: /gateway(/|$)(.*)
+          - path: /gateway
             pathType: Prefix
             backend:
               service:
@@ -32,7 +30,7 @@ spec:
                   number: 8081
 
           # Quotes service
-          - path: /quotes(/|$)(.*)
+          - path: /quotes
             pathType: Prefix
             backend:
               service:
@@ -41,7 +39,7 @@ spec:
                   number: 8082
 
           # Jokes service
-          - path: /jokes(/|$)(.*)
+          - path: /jokes
             pathType: Prefix
             backend:
               service:

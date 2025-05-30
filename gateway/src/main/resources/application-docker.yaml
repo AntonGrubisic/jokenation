@@ -14,7 +14,7 @@ spring:
 
 
           - id: jokes-route
-            uri: http://jokeservice:8080/
+            uri: http://jokeservice:8083/
             predicates:
               - Path=/jokes/**
 
@@ -28,7 +28,7 @@ spring:
 
 
           - id: auth-login-route
-            uri: http://auth:9000/
+            uri: http://authservice:9000/
             predicates:
               - Path=/auth/token
             filters:
@@ -38,7 +38,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://auth:9000
+          issuer-uri: http://authservice:9000
 
 server:
   port: 8081
